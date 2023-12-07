@@ -68,11 +68,25 @@ module vga(
     output wire VGA_VS
     );
 
+parameter WALL_NUM = 10;
+parameter wall_w = 10;
 reg pclk_div_cnt;
 reg pixel_clk;
 wire [10:0] vga_hcnt, vga_vcnt;
 wire vga_blank;
 reg [10:0] h_min, h_max, v_min, v_max;
+reg [10:0] wh_min, wh_max, wv_min, wv_max;
+//wire [10:0] random;
+wire [WALL_NUM-1:0] wall_x [10:0];
+wire [WALL_NUM-1:0] wall_y [10:0];
+
+genvar k;
+generate
+	for (k=0; k<WALL_NUM; k=k+1) begin
+		wall #(.START(50*k+k*k+5)) w1 (.pixel_clk(pixel_clk), .x(wall_x[k]), .y(wall_y[k]));
+	end
+endgenerate
+
 
 initial begin
 h_min = 300;
@@ -99,9 +113,22 @@ vga_controller_640_60 vga_controller(
     .blank(vga_blank)
 );
 
+parameter START = 4;
+
+// LFSR  LFSR_maze
+//          (.i_Clk(pixel_clk),
+//           .i_Enable(1'b1),
+//           .i_Seed_DV(1'b0),
+//           .i_Seed_Data(START), // Replication
+//           .o_LFSR_Data(random),
+//           .o_LFSR_Done()
+//           );
+
 // Generate figure to be displayed
 // Decide the color for the current pixel at index (hcnt, vcnt).
 // This example displays an white square at the center of the screen with a colored checkerboard background.
+
+integer i;
 always @(*) begin
     // Set pixels to black during Sync. Failure to do so will result in dimmed colors or black screens.
     if (vga_blank) begin 
@@ -111,24 +138,37 @@ always @(*) begin
     end
     else begin  // Image to be displayed
         // Default values for the checkerboard background
-        VGA_R = vga_vcnt[6:3];
-        VGA_G = vga_hcnt[6:3];
-        VGA_B = vga_vcnt[6:3] + vga_hcnt[6:3];
+        VGA_R = 4'hf;
+        VGA_G = 4'hf;
+        VGA_B = 4'hf;
         
-        // White square at the center
+        
+
         if ((vga_hcnt >= (h_min + movementData[9:4]) && vga_hcnt <= (h_max + movementData[9:4])) &&
         	((vga_vcnt >= (v_min + movementData[4:0])) && vga_vcnt <= (v_max + movementData[4:0]))) begin
-			VGA_R = 4'hf;
-			VGA_G = 4'hf;
+			VGA_R = 0;
+			VGA_G = 0;
 			VGA_B = 4'hf;
-        end
+	    end
+        else begin 
+			for(i=0; i<WALL_NUM; i=i+1) begin
+				if ((vga_hcnt >= wall_x[i] + wall_w) && (vga_hcnt <=  wall_x[i] + wall_w) &&
+        		((vga_vcnt >=  wall_y[i] + wall_w) && vga_vcnt <=  wall_y[i] + wall_w)) begin
+					VGA_R = 0;
+					VGA_G = 0;
+					VGA_B = 0;
+				end
+        	end
        /* 
+        
+       e=
         h_min <= h_min + movementData[9:4];
         v_min <= v_min + movementData[4:0];
         h_max <= h_max + movementData[9:4];
         v_max <= v_max + movementData[4:0];
         */
-    end
+    	end
+	end
 end
 
 endmodule

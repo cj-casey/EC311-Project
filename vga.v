@@ -60,6 +60,7 @@ endmodule
 // top module that instantiate the VGA controller and generate images
 module vga(
     input wire CLK100MHZ,
+	input wire reset,
     input [14:0] movementData,
     output reg [3:0] VGA_R,
     output reg [3:0] VGA_G,
@@ -69,7 +70,7 @@ module vga(
     );
 
 parameter WALL_NUM = 10;
-parameter wall_w = 10;
+parameter wall_w = 100;
 reg pclk_div_cnt;
 reg pixel_clk;
 wire [10:0] vga_hcnt, vga_vcnt;
@@ -77,13 +78,13 @@ wire vga_blank;
 reg [10:0] h_min, h_max, v_min, v_max;
 reg [10:0] wh_min, wh_max, wv_min, wv_max;
 //wire [10:0] random;
-wire [WALL_NUM-1:0] wall_x [10:0];
-wire [WALL_NUM-1:0] wall_y [10:0];
+wire [10:0] wall_x [WALL_NUM-1:0];
+wire [10:0] wall_y [WALL_NUM-1:0];
 
 genvar k;
 generate
 	for (k=0; k<WALL_NUM; k=k+1) begin
-		wall #(.START(50*k+k*k+5)) w1 (.pixel_clk(pixel_clk), .x(wall_x[k]), .y(wall_y[k]));
+		wall #(.START(50*k+k*k+5)) w1 (.pixel_clk(pixel_clk), .x(wall_x[k]), .y(wall_y[k]), .reset(reset));
 	end
 endgenerate
 
@@ -150,15 +151,16 @@ always @(*) begin
 			VGA_G = 0;
 			VGA_B = 4'hf;
 	    end
-        else begin 
-			for(i=0; i<WALL_NUM; i=i+1) begin
-				if ((vga_hcnt >= wall_x[i] + wall_w) && (vga_hcnt <=  wall_x[i] + wall_w) &&
-        		((vga_vcnt >=  wall_y[i] + wall_w) && vga_vcnt <=  wall_y[i] + wall_w)) begin
-					VGA_R = 0;
-					VGA_G = 0;
-					VGA_B = 0;
-				end
-        	end
+        // else begin 
+		// 	for(i=0; i<WALL_NUM; i=i+1) begin
+		// 		if ((vga_hcnt >= wall_x[i] + wall_w) && (vga_hcnt <=  wall_x[i] + wall_w) &&
+        // 		((vga_vcnt >=  wall_y[i] + wall_w) && vga_vcnt <=  wall_y[i] + wall_w)) begin
+		// 			VGA_R = 0;
+		// 			VGA_G = 4'hf;
+		// 			VGA_B = 0;
+		// 		end
+        // 	end
+		// end
        /* 
         
        e=
@@ -167,7 +169,7 @@ always @(*) begin
         h_max <= h_max + movementData[9:4];
         v_max <= v_max + movementData[4:0];
         */
-    	end
+    	
 	end
 end
 

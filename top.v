@@ -20,6 +20,7 @@
 module top(
     input CLK100MHZ,            // nexys a7 clock
     input ACL_MISO,             // master in
+    input reset,                //sw[0]
     output ACL_MOSI,            // master out
     output ACL_SCLK,            // spi sclk
     output ACL_CSN,             // spi ~chip select

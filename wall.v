@@ -16,11 +16,11 @@ module wall (pixel_clk,x,y,reset);
 
     reg x_set;
     reg y_set;
-   
+    reg seed_en;
     LFSR  lfsrx
             (.i_Clk(pixel_clk),
             .i_Enable(1'b1),
-            .i_Seed_DV(1'b1),
+            .i_Seed_DV(seed_en),
             .i_Seed_Data(START), // Replication
             .o_LFSR_Data(x_loc),
             .o_LFSR_Done()
@@ -29,7 +29,7 @@ module wall (pixel_clk,x,y,reset);
     LFSR  lfsry
             (.i_Clk(pixel_clk),
             .i_Enable(1'b1),
-            .i_Seed_DV(1'b1),
+            .i_Seed_DV(seed_en),
             .i_Seed_Data(START*3+START^2), // Replication
             .o_LFSR_Data(y_loc),
             .o_LFSR_Done()
@@ -39,6 +39,7 @@ module wall (pixel_clk,x,y,reset);
         if(reset) begin
 	        x = 0;
             y = 0;
+            seed_en = 0;
            // x_set = 0;
             //y_set = 0;
 	    end
@@ -46,10 +47,14 @@ module wall (pixel_clk,x,y,reset);
             if (x == 0) begin
                 x = x_loc;
                 x_set = 1;
+                
             end
-            else if (x_set === 1)
+            else if (x_set === 1) begin
+                seed_en = 0;
                 x = x;
+            end
             else if (x !== 0) begin
+                seed_en = 1;
                 x = 0;
             end
 

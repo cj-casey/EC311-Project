@@ -29,14 +29,14 @@ module wall_tb();
     genvar k;
     generate
 	for (k=0; k<WALL_NUM; k=k+1) begin
-		wall #(.START(50*k+k*k+5)) w1 (.pixel_clk(pixel_clk), .x(wall_x[k]), .y(wall_y[k]));
+		wall #(.START(50*k+k*k+5)) w1 (.pixel_clk(pixel_clk), .x(wall_x[k]), .y(wall_y[k]), .reset(reset));
 	end
     endgenerate
 
      initial begin
         pixel_clk = 0; reset = 0;
         #220 reset = 1;
-        #260 reset = 0;
+        #260 reset = ~reset;
      end
 
     always begin

@@ -36,7 +36,7 @@ module wall_tb();
      initial begin
         pixel_clk = 0; reset = 0;
         #220 reset = 1;
-        #260 reset = ~reset;
+        #30 reset = ~reset;
      end
 
     always begin

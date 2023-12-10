@@ -50,41 +50,94 @@ module VGA_Main(
 .hcounter(vga_hcnt),
 .vcounter(vga_vcnt),
 .blank(vga_blank));
+
 wire fast_clock;
+wire fast_clock2;
+wire fsec;
 wire sec_clock;
+wire hsec_clock;
 wire rand_enable;
 
 
  fsm fsm1(fast_clock,sseg_number,cathode,anode);
  
- Clock_divider cd2(in_clk,fast_clock);
- defparam cd2.number = 50000;
+ Clock_divider cd1(in_clk,fast_clock);
+ defparam cd1.number = 50000;
  
-  Clock_divider cd1(in_clk,sec_clock);
+ Clock_divider cd2(in_clk,fast_clock2);
+ defparam cd2.number = 40000;
+ 
+  Clock_divider cd3(in_clk,hsec_clock);
+  defparam cd3.number = 50000000/2;
+  
+  Clock_divider cd4(in_clk,fsec);
+  defparam cd4.number = 50000000*5;
+  
+  
+  
+  
+  Clock_divider cd5(in_clk,sec_clock);
 
-parameter b_length = 94;
-parameter b_width = 95;
-parameter y_dimensions = 5;
-parameter x_dimensions = 5;
+parameter pcount = 400;
 
-wire [10:0] x1 [y_dimensions*x_dimensions-1:0];
-wire [10:0] x2 [y_dimensions*x_dimensions-1:0];
-wire [10:0] y1 [y_dimensions*x_dimensions-1:0];
-wire [10:0] y2 [y_dimensions*x_dimensions-1:0];
-wire [y_dimensions*x_dimensions-1:0] random;
-reg [y_dimensions*x_dimensions-1:0] wall_on;
+//parameter b_length = 94;
+//parameter b_width = 94;
 
+//parameter y_dimensions = 5;
+//parameter x_dimensions = 5;
+
+parameter horizontal_n = 5;
+parameter vertical_n = 5;
+parameter hline_length = pcount/horizontal_n-2;
+parameter hline_width = 2;
+parameter vline_length = 2;
+parameter vline_width = pcount/vertical_n-2;
+
+wire [10:0] x1_h [horizontal_n*(vertical_n):0];
+wire [10:0] x2_h [horizontal_n*(vertical_n):0];
+wire [10:0] y1_h [horizontal_n*(vertical_n):0];
+wire [10:0] y2_h [horizontal_n*(vertical_n):0];
+
+wire [10:0] x1_v [horizontal_n*(vertical_n):0];
+wire [10:0] x2_v [horizontal_n*(vertical_n):0];
+wire [10:0] y1_v [horizontal_n*(vertical_n):0];
+wire [10:0] y2_v [horizontal_n*(vertical_n):0];
+wire [horizontal_n*(vertical_n):0] random_h;
+wire [horizontal_n*(vertical_n):0] random_v;
+
+
+reg [horizontal_n*(vertical_n):0] wall_on;
+
+
+
+//integer num = 0;
+//generate
+//for (i = 0; i<x_dimensions; i=i+1) begin
+//	for (j=0; j<y_dimensions; j=j+1) begin
+//		block #(.length(b_length), .width(b_width)) b1 (.pixel_clk(clk_pix), .ix(i*b_length+81), .iy(j*b_width), .x1(x1[5*i+j]), .x2(x2[5*i+j]), .y1(y1[5*i+j]), .y2(y2[5*i+j]), .on(random[5*i+j]));
+//	end
+//end
+//endgenerate
 genvar i; // x
 genvar j; // y
-integer num = 0;
+
 generate
-for (i = 0; i<x_dimensions; i=i+1) begin
-	for (j=0; j<y_dimensions; j=j+1) begin
-		block #(.length(b_length), .width(b_width)) b1 (.pixel_clk(clk_pix), .ix(i*b_length+81), .iy(j*b_width), .x1(x1[5*i+j]), .x2(x2[5*i+j]), .y1(y1[5*i+j]), .y2(y2[5*i+j]), .on(random[5*i+j]));
+for (i = 0; i<horizontal_n; i=i+1) begin
+for (j = 0; j<vertical_n; j=j+1) begin
+		hline #(.length(hline_length), .width(hline_width)) h1 (.pixel_clk(clk_pix), .ix(i*hline_length+((640-pcount)/2)+3), .iy(j*vline_width+vline_width), .x1(x1_h[horizontal_n*i+j]), 
+		.x2(x2_h[horizontal_n*i+j]), .y1(y1_h[horizontal_n*i+j]), .y2(y2_h[horizontal_n*i+j]));
 	end
 end
 endgenerate
 
+generate
+for (i = 0; i<vertical_n; i=i+1) begin
+for (j = 0; j<horizontal_n; j=j+1) begin
+		vline #(.length(vline_length), .width(vline_width)) v1 (.pixel_clk(clk_pix), .ix(i*hline_length+((640-pcount)/2)+1+pcount/horizontal_n), .iy(j*vline_width), .x1(x1_v[horizontal_n*i+j]), 
+		.x2(x2_v[horizontal_n*i+j]), .y1(y1_v[horizontal_n*i+j]), .y2(y2_v[horizontal_n*i+j]));
+	end
+end
+endgenerate
 
 parameter START = 30504031;
 
@@ -93,31 +146,43 @@ initial begin
 //wall_on = 0;
 end
 
- assign sseg_number = {5'b00000,wall_on,5'b00000,random};
+ assign sseg_number = {5'b00000,random_v,5'b00000,random_h};
  
  assign rand_enable = ~reset;
  
-LFSR  lfsrx
+LFSR  lfsrh
+            (.i_Clk(fast_clock2),
+            .i_Enable(rand_enable),
+            .i_Seed_DV(),
+            .i_Seed_Data(START), // Replication
+            .o_LFSR_Data(random_h),
+            .o_LFSR_Done()
+            );
+ defparam lfsrh.NUM_BITS = horizontal_n*(vertical_n);
+ 
+ LFSR  lfsrv
             (.i_Clk(fast_clock),
             .i_Enable(rand_enable),
             .i_Seed_DV(),
             .i_Seed_Data(START), // Replication
-            .o_LFSR_Data(random),
+            .o_LFSR_Data(random_v),
             .o_LFSR_Done()
             );
- defparam lfsrx.NUM_BITS = 25;
+ defparam lfsrv.NUM_BITS = horizontal_n*(vertical_n);
 
-parameter length = 94;
-parameter width = 95;
-
-
+//parameter length = 94;
+//parameter width = 95;
 
 
+reg [horizontal_n*(vertical_n):0] random_hr;
+reg [horizontal_n*(vertical_n):0] random_vr;
 
-always@(posedge in_clk) begin
-       
-       if(reset)
-            wall_on = random;
+
+always@(posedge sec_clock) begin
+        
+        random_hr = random_h;
+        random_vr = random_v;
+        
      end 
 
 always@(posedge clk_pix) begin
@@ -183,204 +248,53 @@ always @(*) begin
 //            VGA_BB = 0;
 //            end
             
-//            if(random[0]) begin
-//            //box 1,1
-//            if ((vga_hcnt >= (81) && vga_hcnt <= (175)) &&
-//                (vga_vcnt >= (2) && vga_vcnt <= (96))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end    
+
             
-//            end
-//            //box 1,2
-//            if(random[1]) begin
-//            if ((vga_hcnt >= (81) && vga_hcnt <= (175)) &&
-//                (vga_vcnt >= (98) && vga_vcnt <= (192))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end    
-//            end
-//            //box 1,3
-//            if ((vga_hcnt >= (81) && vga_hcnt <= (175)) &&
-//                (vga_vcnt >= (194) && vga_vcnt <= (288))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end   
-            
-//            if(random[9]) begin 
-//            //box 1,4
-//            if ((vga_hcnt >= (81) && vga_hcnt <= (176)) &&
-//                (vga_vcnt >= (290) && vga_vcnt <= (385))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end   
-//            end            
-//            //box 2,1
-//            if ((vga_hcnt >= (177) && vga_hcnt <= (272)) &&
-//                (vga_vcnt >= (2) && vga_vcnt <= (97))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end    
-                        
-//            //box 2,2
-//            if ((vga_hcnt >= (177) && vga_hcnt <= (271)) &&
-//                (vga_vcnt >= (97) && vga_vcnt <= (193))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end    
-             
-                       
-//            //box 2,3
-//            if ((vga_hcnt >= (177) && vga_hcnt <= (272)) &&
-//                (vga_vcnt >= (193) && vga_vcnt <= (288))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end            
-                        
-//            //box 2,4
-//            if ((vga_hcnt >= (176) && vga_hcnt <= (272)) &&
-//                (vga_vcnt >= (290) && vga_vcnt <= (384))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end            
-                        
-//            //box 2,5
-//            if ((vga_hcnt >= (176) && vga_hcnt <= (271)) &&
-//                (vga_vcnt >= (386) && vga_vcnt <= (478))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end            
-                        
-//            //box 3,1
-//            if ((vga_hcnt >= (272) && vga_hcnt <= (367)) &&
-//                (vga_vcnt >= (2) && vga_vcnt <= (97))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end    
-                        
-//            //box 3,2
-//            if ((vga_hcnt >= (273) && vga_hcnt <= (368)) &&
-//                (vga_vcnt >= (97) && vga_vcnt <= (192))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end     
-                        
-//            //box 3,3
-//            if ((vga_hcnt >= (272) && vga_hcnt <= (367)) &&
-//                (vga_vcnt >= (194) && vga_vcnt <= (289))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end     
-                         
-//            //box 3,4
-//            if ((vga_hcnt >= (272) && vga_hcnt <= (367)) &&
-//                (vga_vcnt >= (289) && vga_vcnt <= (384))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end     
-                        
-//            //box 3,5
-//            if ((vga_hcnt >= (273) && vga_hcnt <= (367)) &&
-//                (vga_vcnt >= (386) && vga_vcnt <= (478))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end     
-                    
-//            //box 4,1
-//            if ((vga_hcnt >= (369) && vga_hcnt <= (463)) &&
-//                (vga_vcnt >= (2) && vga_vcnt <= (96))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end    
-                    
-//            //box 4,2
-//            if ((vga_hcnt >= (369) && vga_hcnt <= (463)) &&
-//                (vga_vcnt >= (98) && vga_vcnt <= (192))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end                
-                    
-//            //box 4,3
-//            if ((vga_hcnt >= (369) && vga_hcnt <= (463)) &&
-//                (vga_vcnt >= (194) && vga_vcnt <= (288))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end                
-                    
-                    
-//            //box 4,4
-//            if ((vga_hcnt >= (369) && vga_hcnt <= (463)) &&
-//                (vga_vcnt >= (290) && vga_vcnt <= (384))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end   
-                                
-//            //box 4,5
-//            if ((vga_hcnt >= (369) && vga_hcnt <= (463)) &&
-//                (vga_vcnt >= (386) && vga_vcnt <= (478))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end     
-                          
-//            //box 5,2
-//            if ((vga_hcnt >= (464) && vga_hcnt <= (559)) &&
-//                (vga_vcnt >= (97) && vga_vcnt <= (192))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end 
-                          
-//            //box 5,3
-//            if ((vga_hcnt >= (465) && vga_hcnt <= (559)) &&
-//                (vga_vcnt >= (194) && vga_vcnt <= (288))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end 
-                          
-//            //box 5,4
-//            if ((vga_hcnt >= (465) && vga_hcnt <= (559)) &&
-//                (vga_vcnt >= (290) && vga_vcnt <= (384))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end 
-            
-//            //box 5,5
-//            if ((vga_hcnt >= (465) && vga_hcnt <= (559)) &&
-//                (vga_vcnt >= (386) && vga_vcnt <= (478))) begin
-//            VGA_RB = 255;
-//            VGA_GB = 255;
-//            VGA_BB = 255;
-//            end
-            
-            for(k=0; k<x_dimensions*y_dimensions; k=k+1) begin
-		 		if ((vga_hcnt >= x1[k]) && (vga_hcnt <=  x2[k]) &&
-         		((vga_vcnt >=  y1[k]) && vga_vcnt <=  y2[k])) begin
+            for(k=0; k<horizontal_n*(vertical_n); k=k+1) begin
+                if(~random_hr[k]) begin
+		 		if ((vga_hcnt >= x1_h[k]) && (vga_hcnt <=  x2_h[k]) &&
+         		((vga_vcnt >=  y1_h[k]) && vga_vcnt <=  y2_h[k])) begin
 	               VGA_RB = 255;
                     VGA_GB = 255;
                     VGA_BB = 255;
 		 		end
+		 		end
          	end
+         	
+         	for(k=0; k<horizontal_n*(vertical_n); k=k+1) begin
+                if(~random_vr[k]) begin
+		 		if ((vga_hcnt >= x1_v[k]) && (vga_hcnt <=  x2_v[k]) &&
+         		((vga_vcnt >=  y1_v[k]) && vga_vcnt <=  y2_v[k])) begin
+	               VGA_RB = 255;
+                    VGA_GB = 255;
+                    VGA_BB = 255;
+		 		end
+		 		end
+         	end
+         	      //left bar
+            if ((vga_hcnt >= (((640-pcount)/2)+1)) && (vga_hcnt <= ((640-pcount)/2)+2) && (vga_vcnt >= (0)) && (vga_vcnt <= (pcount-3))) begin
+            VGA_RB = 255;
+            VGA_GB = 255;
+            VGA_BB = 255;
+            end  
+//         	  //right bar
+            if ((vga_hcnt >= (((640-pcount)/2)+pcount-5)) && (vga_hcnt <= (((640-pcount)/2)+pcount-4)) && (vga_vcnt >= (0)) && (vga_vcnt <= (pcount-3))) begin
+            VGA_RB = 255;
+            VGA_GB = 255;
+            VGA_BB = 255;
+            end
+//             top bar
+            if ((vga_hcnt >= (y1_v[0]) && (vga_hcnt <= (640-pcount)/2)+pcount) && (vga_vcnt == (0))) begin
+            VGA_RB = 255;
+            VGA_GB = 255;
+            VGA_BB = 255;
+            end
+////bottom bar
+            if ((vga_hcnt >= (y1_v[0]) && (vga_hcnt <= (640-pcount)/2)+pcount)&& (vga_vcnt == (pcount-4))) begin
+            VGA_RB = 255;
+            VGA_GB = 255;
+            VGA_BB = 255;
+            end
 
         end
     end

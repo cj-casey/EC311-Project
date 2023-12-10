@@ -46,7 +46,7 @@ module spi_master(
 	output sclk,				// 1MHz
     output reg mosi = 1'b0,     // master out
     output reg cs = 1'b1,       // slave chip select
-    output [14:0] acl_data     // 15 bit data, 5 each axis
+    output [9:0] acl_data     // 15 bit data, 5 each axis
     );
     
     // Control sclk output for spi mode
@@ -70,7 +70,7 @@ module spi_master(
 	reg [7:0] mode_wr_data  = 8'h02;			// Data to write to mode register
     reg [7:0] read_instr    = 8'h0B;			// Sensor read instruction
     reg [7:0] x_LSB_addr    = 8'h0E;			// X data LSB address, auto-increments to following 5 data registers
-    reg [14:0] temp_DATA    = 15'b0;			// 15 bits, 5 bits for each axis		
+    reg [9:0] temp_DATA    = 15'b0;			// 15 bits, 5 bits for each axis		
     reg [15:0] X = 15'b0;						// X data MSB and LSB from sensor
     reg [15:0] Y = 15'b0;					    // Y data MSB and LSB from sensor
     reg [15:0] Z = 15'b0;						// Z data MSB and LSB from sensor
@@ -730,7 +730,8 @@ module spi_master(
     // Data Buffer
     always @(negedge iclk)
         if(latch_data) begin		// latch 1&1/2 tick after entering state END_SPI
-            temp_DATA <= { X[11:7], Y[11:7], Z[11:7] };   // latch sign bit + 4 data bits each axis
+            temp_DATA <= { X[11:7], Y[11:7]}; 
+              // latch sign bit + 4 data bits each axis
 		end
     
     // Output accelerometer data

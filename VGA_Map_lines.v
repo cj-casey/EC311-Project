@@ -88,10 +88,10 @@ parameter pcount = 400;
 
 parameter horizontal_n = 5;
 parameter vertical_n = 5;
-parameter hline_length = pcount/horizontal_n-2;
+parameter hline_length = pcount/horizontal_n;
 parameter hline_width = 2;
 parameter vline_length = 2;
-parameter vline_width = pcount/vertical_n-2;
+parameter vline_width = pcount/vertical_n;
 
 wire [10:0] x1_h [horizontal_n*(vertical_n):0];
 wire [10:0] x2_h [horizontal_n*(vertical_n):0];
@@ -272,25 +272,25 @@ always @(*) begin
 		 		end
          	end
          	      //left bar
-            if ((vga_hcnt >= (((640-pcount)/2)+1)) && (vga_hcnt <= ((640-pcount)/2)+2) && (vga_vcnt >= (0)) && (vga_vcnt <= (pcount-3))) begin
+            if ((vga_hcnt >= (x1_h[0]-1)) && (vga_hcnt <= (x1_h[0]+1)) && (vga_vcnt >= (0)) && (vga_vcnt <= (pcount))) begin
             VGA_RB = 255;
             VGA_GB = 255;
             VGA_BB = 255;
             end  
 //         	  //right bar
-            if ((vga_hcnt >= (((640-pcount)/2)+pcount-5)) && (vga_hcnt <= (((640-pcount)/2)+pcount-4)) && (vga_vcnt >= (0)) && (vga_vcnt <= (pcount-3))) begin
+            if ((vga_hcnt >= (x1_h[0]+pcount-2)) && (vga_hcnt <= (x1_h[0]+pcount)) && (vga_vcnt >= (0)) && (vga_vcnt <= (pcount))) begin
             VGA_RB = 255;
             VGA_GB = 255;
             VGA_BB = 255;
             end
-//             top bar
-            if ((vga_hcnt >= (y1_v[0]) && (vga_hcnt <= (640-pcount)/2)+pcount) && (vga_vcnt == (0))) begin
+//             //top bar
+            if ((vga_hcnt >= (x1_h[0])) && (vga_hcnt <= (x1_h[0]+pcount)) && (vga_vcnt == (0))) begin
             VGA_RB = 255;
             VGA_GB = 255;
             VGA_BB = 255;
             end
-////bottom bar
-            if ((vga_hcnt >= (y1_v[0]) && (vga_hcnt <= (640-pcount)/2)+pcount)&& (vga_vcnt == (pcount-4))) begin
+//              //bottom bar
+            if ((vga_hcnt >= (x1_h[0]-1)) && (vga_hcnt <= (x1_h[0]+pcount)) && (vga_vcnt >= (pcount)) && (vga_vcnt <= (pcount+2))) begin
             VGA_RB = 255;
             VGA_GB = 255;
             VGA_BB = 255;

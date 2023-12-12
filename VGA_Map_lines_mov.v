@@ -112,7 +112,8 @@ wire [horizontal_n*(vertical_n):0] random_v;
 reg [horizontal_n*(vertical_n):0] wall_on;
 
 reg direction_x,direction_y;
-reg [11:0] movement_x,movement_y;
+reg signed [11:0] movement_x,movement_y;
+reg [11:0] vx,vy;
 
 reg [10:0] h_min,  v_min; 
 wire [10:0] h_max, v_max;
@@ -173,7 +174,7 @@ assign v_max = v_min + pwidth;
 
 parameter START = 30504031;
 
- assign sseg_number = {5'b00000,random_v,5'b00000,random_h};
+ assign sseg_number = {5'b00000,movement_y,5'b00000,movement_x};
  
  assign rand_enable = ~reset;
  
@@ -227,23 +228,43 @@ assign refresh_tick = ((vga_vcnt == 481 ) && (vga_hcnt == 0)) ? 1:0;
 always @(*) begin
         movement_x = (movementData[9] == 1'b0) ? {{7{1'b0}}, movementData[8:5]} : -(16-movementData[8:5]);
         movement_y = (movementData[4] == 1'b0) ? {{7{1'b0}}, movementData[3:0]} : -(16-movementData[3:0]);
-
+        
+//        if (movement_y[11] == 1) begin
+//        movement_y = ~(movement_y-1);
+//        movement_y = movement_y*-1;
+//        end
+        
+//        if (movement_x[11] == 1) begin
+//        movement_x = ~(movement_x-1);
+//        movement_x = movement_x*-1;
+//        end
+        
+        if (movement_y <= -4)
+        vx = 4;
+        else if (movement_y >= 4)
+        vx = -4;
+        else
+        vx = -movement_y;
+        
+        if (movement_x <= -4)
+        vy = -4;
+        else if (movement_x >= 4)
+        vy = 4;
+        else
+        vy = movement_x;
+       
 end
+
 reg collision;
 reg l_collision;
+
+
+
 always @ (posedge refresh_tick) begin
          //if ((v_min - movement_x > (5) && v_min - movement_x <= pcount )) begin
                 // if ((h_min - movement_y > ((640-pcount)/2+2) && h_min - movement_y <= ((640-pcount)/2+pcount)) ) begin
 
-         if(posr || collision || l_collision) begin
-            h_min = h_start;
-            v_min = v_start;
-         end else begin
-            if(~reset) begin
-                v_min = v_min - movement_x;
-                h_min = h_min - movement_y;
-            end
-          end
+         
 end
 assign col = {collision, l_collision};
 
@@ -253,23 +274,31 @@ always @ (posedge refresh_tick) begin
     if ( left_bar >= h_max || right_bar <= h_min || bottom_bar <= v_min || top_bar >= v_max) begin
         collision = 1;
     end
-    else begin
         for (k=0; k<horizontal_n*(vertical_n); k=k+1) begin
             //if(random_hr[k]) begin
 
-                if(h_min <= x2_h[k] && h_max >= x1_h[k] && v_max >= y1_h[k] && v_min <= y2_h[k]) begin
+                if(h_min <= x2_h[k] && h_max >= x1_h[k] && v_max <= y1_h[k] && v_min >= y2_h[k]) begin
                  collision = 1;
                 end           
             //end
             //if(random_vr[k]) begin
-                if(h_min <= x2_v[k] && h_max >= x1_v[k] && v_max >= y1_v[k] && v_min <= y2_v[k]) begin
+                if(h_min <= x2_v[k] && h_max >= x1_v[k] && v_max <= y1_v[k] && v_min >= y2_v[k]) begin
                  collision = 1;
                 end           
             //end
         end
+        if(posr || collision || l_collision) begin
+            h_min = h_start;
+            v_min = v_start;
+         end else begin
+            if(reset) begin
+                v_min = v_min + vy;
+                h_min = h_min + vx;
+            end
+          end
         collision = 0;
     end 
-end
+
 
 always @ (posedge refresh_tick) begin
          //if ((v_min - movement_x > (5) && v_min - movement_x <= pcount )) begin

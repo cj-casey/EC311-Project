@@ -24,11 +24,13 @@ module VGA_Main(
     input wire in_clk,
     input [9:0] movementData,
     input wire reset,
+    input wire posr,
     output reg [3:0] VGA_RB,
     output reg [3:0] VGA_GB,
     output reg [3:0] VGA_BB,
     output [7:0] anode,
     output [6:0] cathode,
+    output [1:0] col,
     output wire hs,
     output wire vs
     );
@@ -110,7 +112,7 @@ wire [horizontal_n*(vertical_n):0] random_v;
 reg [horizontal_n*(vertical_n):0] wall_on;
 
 reg direction_x,direction_y;
-reg signed [11:0] movement_x,movement_y;
+reg [11:0] movement_x,movement_y;
 
 reg [10:0] h_min,  v_min; 
 wire [10:0] h_max, v_max;
@@ -150,10 +152,20 @@ for (j = 0; j<horizontal_n; j=j+1) begin
 end
 endgenerate
 
+
+parameter left_bar = ((640-pcount)/2)+1;
+parameter right_bar = ((640-pcount)/2)+pcount;
+parameter top_bar = 2;
+parameter bottom_bar = pcount;
+
+
+
 parameter pwidth = 20;
+parameter h_start = ((640-pcount)/2)+10;
+parameter v_start = pcount - vline_width +10;
 initial begin
-h_min = ((640-pcount)/2)+2;
-v_min = pcount - vline_width +5;
+h_min = h_start;
+v_min = v_start;
 end
 
 assign h_max = h_min + pwidth;
@@ -189,6 +201,7 @@ LFSR  lfsrh
 //parameter width = 95;
 
 
+
 reg [horizontal_n*(vertical_n):0] random_hr;
 reg [horizontal_n*(vertical_n):0] random_vr;
 
@@ -205,29 +218,62 @@ always@(posedge clk_pix) begin
         x <= x - 1;
      end 
 
- integer k;
+
 wire refresh_tick;
 assign refresh_tick = ((vga_vcnt == 481 ) && (vga_hcnt == 0)) ? 1:0;
 
 
-always @ (posedge refresh_tick) begin
-       // if ((h_min - movement_y > ((640-pcount)/2+2) && h_min - movement_y <= ((640-pcount)/2+pcount)) ) begin
-        if(~reset)
-             h_min = h_min - movement_y;
-        // end
-                     
-end
 
 always @(*) begin
         movement_x = (movementData[9] == 1'b0) ? {{7{1'b0}}, movementData[8:5]} : -(16-movementData[8:5]);
         movement_y = (movementData[4] == 1'b0) ? {{7{1'b0}}, movementData[3:0]} : -(16-movementData[3:0]);
 
 end
+reg collision;
+reg l_collision;
+always @ (posedge refresh_tick) begin
+         //if ((v_min - movement_x > (5) && v_min - movement_x <= pcount )) begin
+                // if ((h_min - movement_y > ((640-pcount)/2+2) && h_min - movement_y <= ((640-pcount)/2+pcount)) ) begin
+
+         if(posr || collision || l_collision) begin
+            h_min = h_start;
+            v_min = v_start;
+         end else begin
+            if(~reset) begin
+                v_min = v_min - movement_x;
+                h_min = h_min - movement_y;
+            end
+          end
+end
+assign col = {collision, l_collision};
+
+integer k;
+always @ (posedge refresh_tick) begin
+    
+    if ( left_bar >= h_max || right_bar <= h_min || bottom_bar <= v_min || top_bar >= v_max) begin
+        collision = 1;
+    end
+    else begin
+        for (k=0; k<horizontal_n*(vertical_n); k=k+1) begin
+            //if(random_hr[k]) begin
+
+                if(h_min <= x2_h[k] && h_max >= x1_h[k] && v_max >= y1_h[k] && v_min <= y2_h[k]) begin
+                 collision = 1;
+                end           
+            //end
+            //if(random_vr[k]) begin
+                if(h_min <= x2_v[k] && h_max >= x1_v[k] && v_max >= y1_v[k] && v_min <= y2_v[k]) begin
+                 collision = 1;
+                end           
+            //end
+        end
+        collision = 0;
+    end 
+end
 
 always @ (posedge refresh_tick) begin
          //if ((v_min - movement_x > (5) && v_min - movement_x <= pcount )) begin
-         if(~reset)
-            v_min = v_min - movement_x;
+         
        //end
 end
 
@@ -301,9 +347,9 @@ always @(*) begin
                 if(~random_hr[k]) begin
 		 		if ((vga_hcnt >= x1_h[k]) && (vga_hcnt <=  x2_h[k]) &&
          		((vga_vcnt >=  y1_h[k]) && vga_vcnt <=  y2_h[k])) begin
-	               VGA_RB = 255;
+	               VGA_RB = 0;
                     VGA_GB = 255;
-                    VGA_BB = 255;
+                    VGA_BB = 0;
 		 		end
 		 		end
          	end
@@ -312,9 +358,9 @@ always @(*) begin
                 if(~random_vr[k]) begin
 		 		if ((vga_hcnt >= x1_v[k]) && (vga_hcnt <=  x2_v[k]) &&
          		((vga_vcnt >=  y1_v[k]) && vga_vcnt <=  y2_v[k])) begin
-	               VGA_RB = 255;
+	               VGA_RB = 0;
                     VGA_GB = 255;
-                    VGA_BB = 255;
+                    VGA_BB = 0;
 		 		end
 		 		end
          	end
@@ -345,12 +391,15 @@ always @(*) begin
             
            
 
-
+        
         // White square at the center
         if ((vga_hcnt >= (h_min) && vga_hcnt <= (h_max )) &&
             (vga_vcnt >= (v_min) && vga_vcnt <= (v_max))) begin
             VGA_RB = 4'hf;
-            VGA_GB = 4'hf;
+            if(VGA_GB == 255)
+                l_collision = 1;
+            else
+                l_collision = 0;
             VGA_BB = 4'hf;
         end
 

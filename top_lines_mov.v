@@ -19,12 +19,12 @@
 
 module top(
     input CLK100MHZ,            // nexys a7 clock
-    input reset,
+    input [1:0] sw,
     input ACL_MISO,             // master in
     output ACL_MOSI,            // master out
     output ACL_SCLK,            // spi sclk
     output ACL_CSN,             // spi ~chip select
-    output [14:0] LED,          // X = LED[14:10], Y = LED[9:5], Z = LED[4:0]
+    output [15:0] LED,          // X = LED[14:10], Y = LED[9:5], Z = LED[4:0]
     output [6:0] SEG,           // 7 segments of display
     output DP,                  // decimal point of display
     output [7:0] AN,
@@ -37,6 +37,7 @@ module top(
     
     wire w_4MHz;
     wire [14:0] acl_data;
+    wire [1:0] collision;
         
     iclk_gen clock_generation(
         .CLK100MHZ(CLK100MHZ),
@@ -53,12 +54,14 @@ module top(
     );
 
     VGA_Main vgam(
-      .reset(reset),
+      .reset(sw[0]),
+      .posr(sw[1]),
      .in_clk(CLK100MHZ),
      .movementData(acl_data),
      .VGA_RB(VGA_R),
      .VGA_GB(VGA_G),
      .VGA_BB(VGA_B),
+     .col(collision),
      .hs(VGA_HS),
      .vs(VGA_VS),
      .anode(AN),
@@ -83,7 +86,10 @@ module top(
 //        .dp(DP),
 //        .an(AN)
 //    );
-      assign LED[0] = reset;
+      assign LED[0] = sw[0];
+      assign LED[1] = sw[1];
+      assign LED[2] = collision[0];
+      assign LED[3] = collision[1];
 //    assign LED[14:10] = acl_data[14:10];    // 5 bits of x data
 //    assign LED[9:5]   = acl_data[9:5];     // 5 bits of y data
 //    assign LED[4:0]   = acl_data[4:0];      // 5 bits of z data

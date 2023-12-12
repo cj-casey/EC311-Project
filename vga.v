@@ -97,7 +97,7 @@ reg [10:0] wh_min, wh_max, wv_min, wv_max;
 reg [10:0] x,y,x1,y1;
 reg [10:0] vx,vy;
 reg [3:0] green,red,blue;
-reg collision, collision_left, collision_right, collision_top, collision_bottom;
+reg collision_x, collision_y;
 //wire [10:0] random;
 wire [WALL_NUM-1:0] wall_x [10:0];
 wire [WALL_NUM-1:0] wall_y [10:0];
@@ -113,15 +113,12 @@ wire [WALL_NUM-1:0] wall_y [10:0];
 initial begin
 h_min = 300;
 h_max = 340;
-v_min = 220;
-v_max = 260;
+v_min = 200;
+v_max = 400;
 x = 100;
-x1 = 100;
 y = 100;
-y1 = 100;
 move_clk_cnt = 0;
 move_clk = 0;
-blue = 0;
 LED = 0;
 end
 
@@ -169,41 +166,28 @@ parameter START = 4;
 // This example displays an white square at the center of the screen with a colored checkerboard background.
 
 always @ * begin 
-if (up)
+if (up) begin
 vy = -2;
-else if (down)
+end
+else if (down) begin
 vy = 2;
+end
 else
 vy = 0;
 end
 
 always @ * begin
-if (left)
+if (left) begin
 vx = -2;
-else if (right)
+end
+else if (right) begin
 vx = 2;
+end
 else 
 vx = 0;
 end
 
-always @ (posedge refresh_tick) begin
-
-if (collision_left == 0 && collision_right == 0)
-x = x + vx;
-
-x1 = x;
-end
-
-always @ (posedge refresh_tick) begin
-
-if (collision_top == 0 && collision_bottom == 0)
-y = y + vy;
-
-y1 = y;
-end
-
 wire [10:0] square_top, square_bottom, square_left, square_right;
-wire [10:0] square_top1, square_bottom1, square_left1, square_right1;
 parameter square_length = 20;
 
 assign square_top = y;
@@ -211,48 +195,34 @@ assign square_bottom = y + square_length;
 assign square_left = x;
 assign square_right = x + square_length;
 
-assign square_top1 = y1;
-assign square_bottom1 = y1 + square_length;
-assign square_left1 = x1;
-assign square_right1 = x1 + square_length;
 
+always @ (posedge refresh_tick) begin
 
-always @ * begin
-if (square_left <= h_max && square_right >= h_min && square_bottom >= v_min && square_top <= v_max) begin
-collision = 1;
-
-    if (square_left <= h_max && square_left1 > h_max)
-    collision_left = 1;
-    else 
-    collision_left = 0;
-    if (square_right >= h_min && square_right1 < h_min)
-    collision_right = 1;
-    else
-    collision_right = 0;
-    if (square_bottom >= v_min && square_bottom1 < v_min)
-    collision_bottom = 1;
-    else
-    collision_bottom = 0;
-    if (square_top <= v_max && square_bottom1 > v_max)
-    collision_top = 1;
-    else
-    collision_top = 0;
-    end
-else
-collision = 0;
-collision_left = 0;
-collision_right = 0;
-collision_top = 0;
-collision_bottom = 0;    
+if (square_left + vx <= h_max && square_right + vx >= h_min && square_bottom >= v_min && square_top <= v_max) begin
+collision_x = 1;
 end
 
+else begin
+collision_x = 0;
+x = x + vx;
+end
+
+if (square_left <= h_max && square_right >= h_min && square_bottom + vy >= v_min && square_top + vy <= v_max) begin
+collision_y = 1;
+end
+
+else begin
+collision_y = 0;
+y = y + vy;
+end
+
+end
+
+
 always @ * begin
-if (collision == 1) begin
-red = 4'hf;
-green = 0;
-if (collision_right == 1)
-blue = 4'hf;
-LED = 1;
+if (collision_x == 1 || collision_y == 1) begin
+    red = 4'hf;
+    green = 0;
 end
 else begin
 red = 0;
@@ -287,7 +257,7 @@ always @(*) begin
         	((vga_vcnt >= (square_top)) && vga_vcnt <= (square_bottom) )) begin
 			VGA_R = red;
 			VGA_G = green;
-			VGA_B = blue;
+			VGA_B = 0;
 	    end
 //        else begin 
 //			for(i=0; i<WALL_NUM; i=i+1) begin

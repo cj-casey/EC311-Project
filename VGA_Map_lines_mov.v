@@ -160,7 +160,7 @@ parameter top_bar = 2;
 parameter bottom_bar = pcount;
 
 
-
+reg [5:0] timer;
 parameter pwidth = 20;
 parameter h_start = ((640-pcount)/2)+10;
 parameter v_start = pcount - vline_width +10;
@@ -173,8 +173,9 @@ assign h_max = h_min + pwidth;
 assign v_max = v_min + pwidth;
 
 parameter START = 30504031;
+reg [15:0] score;
 
- assign sseg_number = {5'b00000,movement_y,5'b00000,movement_x};
+ assign sseg_number = {score,10'b0000000000,timer};
  
  assign rand_enable = ~reset;
  
@@ -205,8 +206,17 @@ LFSR  lfsrh
 
 reg [horizontal_n*(vertical_n):0] random_hr;
 reg [horizontal_n*(vertical_n):0] random_vr;
+reg line_change;
 
+//init
 
+//always@(posedge sec_clock)begin
+ 
+//	   if(count == number) begin
+//	       out_clk = ~out_clk;
+//	       count = 0;
+//	    end
+//end
 
 always@(posedge sec_clock) begin
         
@@ -239,72 +249,103 @@ always @(*) begin
 //        movement_x = movement_x*-1;
 //        end
         
-        if (movement_y <= -4)
-        vx = 4;
-        else if (movement_y >= 4)
-        vx = -4;
-        else
-        vx = -movement_y;
+        if (movement_y <= -3)
+        vx = 2;
+        else if (movement_y >= 3)
+        vx = -2;
+        else if (movement_y >= -1 && movement_y <= 1)
+        vx = 0;
+        else if (movement_y < -1 && movement_y > -3)
+        vx = 1;
+        else 
+        vx = -1;
         
-        if (movement_x <= -4)
-        vy = -4;
-        else if (movement_x >= 4)
-        vy = 4;
+        
+        
+        if (movement_x <= -3)
+        vy = -2;
+        else if (movement_x >= 3)
+        vy = 2;
+        else if (movement_x >= -1 && movement_x <= 1)
+        vy = 0;
+        else if (movement_x < -1 && movement_x > -3)
+        vy = -1;
         else
-        vy = movement_x;
+        vy = 1;
+        
        
 end
 
 reg collision;
 reg l_collision;
-
-
-
-always @ (posedge refresh_tick) begin
-         //if ((v_min - movement_x > (5) && v_min - movement_x <= pcount )) begin
-                // if ((h_min - movement_y > ((640-pcount)/2+2) && h_min - movement_y <= ((640-pcount)/2+pcount)) ) begin
-
-         
+reg end_flag;
+reg[8:0] count;
+initial begin
+score = 0;
+timer = 30;
+count = 0;
 end
+
+
+
+
 assign col = {collision, l_collision};
 
+parameter cnt_num = 240;
 integer k;
 always @ (posedge refresh_tick) begin
-    
-    if ( left_bar >= h_max || right_bar <= h_min || bottom_bar <= v_min || top_bar >= v_max) begin
+     if ( left_bar >= h_min || right_bar <= h_max || bottom_bar <= v_max || top_bar >= v_min || timer == 0) begin
+     
         collision = 1;
     end
         for (k=0; k<horizontal_n*(vertical_n); k=k+1) begin
-            //if(random_hr[k]) begin
+            if(~random_hr[k]) begin
 
-                if(h_min <= x2_h[k] && h_max >= x1_h[k] && v_max <= y1_h[k] && v_min >= y2_h[k]) begin
+                if(h_min <= x2_h[k] && h_max >= x1_h[k] && v_max >= y1_h[k] && v_min <=  y2_h[k]) begin
                  collision = 1;
                 end           
-            //end
-            //if(random_vr[k]) begin
-                if(h_min <= x2_v[k] && h_max >= x1_v[k] && v_max <= y1_v[k] && v_min >= y2_v[k]) begin
+            end
+            end
+        for (k=0; k<horizontal_n*(vertical_n); k=k+1) begin    
+            if(~random_vr[k]) begin
+                if(h_min <= x2_v[k] && h_max >= x1_v[k] && v_max >= y1_v[k] && v_min <=  y2_v[k]) begin
                  collision = 1;
                 end           
-            //end
+            end
+         
         end
-        if(posr || collision || l_collision) begin
+      
+        if(h_min <=(right_bar -30) && h_max >= (right_bar-60) && v_max >= 20 && v_min <=  40) begin
+                 end_flag = 1;
+        end 
+//          if(~random_hr[0]) begin
+//             if (h_min <= x2_h[0] && h_max >= x1_h[0] && v_max >= y1_h[0] && v_min <= y2_h[0]) begin
+//              collision = 1;
+//        end
+       // end
+      
+        if(posr || collision || l_collision || end_flag) begin
             h_min = h_start;
             v_min = v_start;
+             timer = 30;
+             if (end_flag) begin
+                score  = score + 1;
+             end
          end else begin
-            if(reset) begin
+            
+            if(~reset) begin
                 v_min = v_min + vy;
                 h_min = h_min + vx;
+                count = count + 1;
+	                if(count == cnt_num) begin
+	                   timer = timer -1;
+	                   count = 0;
+	                   end
             end
           end
+        end_flag = 0;
         collision = 0;
     end 
-
-
-always @ (posedge refresh_tick) begin
-         //if ((v_min - movement_x > (5) && v_min - movement_x <= pcount )) begin
-         
-       //end
-end
 
 //always @ (posedge refresh_tick) begin
 //         if (reset) begin
@@ -418,6 +459,21 @@ always @(*) begin
             VGA_BB = 255;
             end
             
+            // end flag
+             if ((vga_hcnt >= (right_bar-60)) && (vga_hcnt <=  (right_bar -30)) &&
+         		((vga_vcnt >= 20  ) && vga_vcnt <=  40)) begin
+            VGA_RB = 255;
+            VGA_GB = 0;
+            VGA_BB = 0;
+            end
+            //flag pole
+             if ((vga_hcnt >= (right_bar-62)) && (vga_hcnt <=  (right_bar-60)) &&
+         		((vga_vcnt >= 20  ) && vga_vcnt <=  70)) begin
+            VGA_RB = 255;
+            VGA_GB = 255;
+            VGA_BB = 255;
+            end
+            
            
 
         
@@ -425,13 +481,11 @@ always @(*) begin
         if ((vga_hcnt >= (h_min) && vga_hcnt <= (h_max )) &&
             (vga_vcnt >= (v_min) && vga_vcnt <= (v_max))) begin
             VGA_RB = 4'hf;
-            if(VGA_GB == 255)
-                l_collision = 1;
-            else
-                l_collision = 0;
             VGA_BB = 4'hf;
         end
 
         end
     end
+
+
 endmodule

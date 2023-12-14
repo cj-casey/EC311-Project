@@ -84,6 +84,7 @@ module vga(
     output reg LED
     );
 
+parameter BW = 12;
 parameter WALL_NUM = 10;
 parameter wall_w = 10;
 reg pclk_div_cnt;
@@ -94,6 +95,7 @@ wire [10:0] vga_hcnt, vga_vcnt;
 wire vga_blank;
 reg [10:0] h_min, h_max, v_min, v_max;
 reg [10:0] wh_min, wh_max, wv_min, wv_max;
+reg [10:0] top_screen, bottom_screen, right_screen, left_screen;
 reg [10:0] x,y,x1,y1;
 reg [10:0] vx,vy;
 reg [3:0] green,red,blue;
@@ -120,6 +122,10 @@ y = 100;
 move_clk_cnt = 0;
 move_clk = 0;
 LED = 0;
+top_screen = 1;
+bottom_screen = 479;
+right_screen = 639;
+left_screen = 1;
 end
 
 wire refresh_tick;
@@ -198,23 +204,40 @@ assign square_right = x + square_length;
 
 always @ (posedge refresh_tick) begin
 
-if (square_left + vx <= h_max && square_right + vx >= h_min && square_bottom >= v_min && square_top <= v_max) begin
+if ((square_left + vx) <= h_max && (square_right + vx) >= h_min && square_bottom >= v_min && square_top <= v_max) begin
 collision_x = 1;
 end
 
-else begin
-collision_x = 0;
-x = x + vx;
+if ((square_left + vx) <= left_screen || (square_right + vx) >= right_screen) begin
+collision_x = 1;
 end
 
-if (square_left <= h_max && square_right >= h_min && square_bottom + vy >= v_min && square_top + vy <= v_max) begin
+//if ((square_right + vx) >= 639) begin
+//collision_x = 1;
+//end
+
+if (square_left <= h_max && square_right >= h_min && (square_bottom + vy) >= v_min && (square_top + vy) <= v_max) begin
 collision_y = 1;
 end
 
-else begin
-collision_y = 0;
+if ((square_top + vy) <= top_screen || (square_bottom + vy) >= bottom_screen) begin
+collision_y = 1;
+end
+
+//if ((square_bottom + vy) >= 479) begin
+//collision_y = 1;
+//end
+
+if (collision_x == 0) begin
+x = x + vx;
+end
+
+if (collision_y == 0) begin
 y = y + vy;
 end
+
+collision_x = 0;
+collision_y = 0;
 
 end
 

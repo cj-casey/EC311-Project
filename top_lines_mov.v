@@ -19,7 +19,7 @@
 
 module top(
     input CLK100MHZ,            // nexys a7 clock
-    input [1:0] sw,
+    input [2:0] sw,
     input ACL_MISO,             // master in
     output ACL_MOSI,            // master out
     output ACL_SCLK,            // spi sclk
@@ -56,6 +56,7 @@ module top(
     VGA_Main vgam(
       .reset(sw[0]),
       .posr(sw[1]),
+      .dark_souls_mode(sw[2]),
      .in_clk(CLK100MHZ),
      .movementData(acl_data),
      .VGA_RB(VGA_R),

@@ -25,6 +25,7 @@ module VGA_Main(
     input [9:0] movementData,
     input wire reset,
     input wire posr,
+    input wire dark_souls_mode,
     output reg [3:0] VGA_RB,
     output reg [3:0] VGA_GB,
     output reg [3:0] VGA_BB,
@@ -89,8 +90,8 @@ parameter pcount = 420;
 //parameter y_dimensions = 5;
 //parameter x_dimensions = 5;
 
-parameter horizontal_n = 7;
-parameter vertical_n = 7;
+parameter horizontal_n = 5;
+parameter vertical_n = 5;
 parameter hline_length = pcount/horizontal_n;
 parameter hline_width = 2;
 parameter vline_length = 2;
@@ -248,7 +249,6 @@ always @(*) begin
 //        movement_x = ~(movement_x-1);
 //        movement_x = movement_x*-1;
 //        end
-        
         if (movement_y <= -3)
         vx = 2;
         else if (movement_y >= 3)
@@ -277,47 +277,61 @@ always @(*) begin
 end
 reg timer_reset = 0;
 reg collision;
-reg l_collision;
+reg time_collision;
 reg collision_x,collision_y;
 reg end_flag;
 reg[8:0] count;
+reg [10:0] t_bar;
+reg [10:0] b_bar;
+reg [10:0] l_bar;
+reg [10:0] r_bar;
+reg w_collision;
 initial begin
 score = 0;
 timer = horizontal_n*(vertical_n);
 count = 0;
+w_collision = 0;
 timer_reset = 0;
+t_bar = 1;
+b_bar = pcount;
+l_bar = (640-pcount)/2+3;
+r_bar = (640-pcount)/2+3+pcount-2;
 end
 parameter cnt_num = 120;
 
 always @(posedge sec_clock) begin
  if(timer_reset) begin
         timer = horizontal_n*(vertical_n);
+        
   end else begin
         if(~reset) begin
                timer = timer -1;
                if (timer == 0)
-                timer  =  horizontal_n*(vertical_n);
-               end
+                    timer = horizontal_n*(vertical_n);
+              end
+          
        end
 end
 
-assign col = {collision, l_collision};
+assign col = {collision, dark_souls_mode};
 
+always@(*) begin
+    if(dark_souls_mode)
+        w_collision = collision;
+end
+//assign w_collision = dark_souls_mode ? collision: 0;
 
 integer k;
 always @ (posedge refresh_tick) begin
-     if ( left_bar >= h_min || right_bar <= h_max || bottom_bar <= v_max || top_bar >= v_min || timer == horizontal_n*(vertical_n)) begin
+
+     if ( l_bar >= h_min || r_bar <= h_max || b_bar <= v_max || t_bar >= v_min ) begin
         collision = 1;
     end
     
-    if ( h_min + vx <= left_bar ||  h_max + vx >= right_bar) begin
-        collision_x = 1;
-    end
-    
-    if (  v_max + vy >= bottom_bar ||  v_min + vy <= top_bar ) begin
-        collision_y = 1;
-    end
-    
+        
+    if(timer == horizontal_n*(vertical_n)) begin
+        time_collision = 1;
+        end
     
         // Check collision with horizontal lines 
         for (k=0; k<horizontal_n*(vertical_n); k=k+1) begin
@@ -343,19 +357,24 @@ always @ (posedge refresh_tick) begin
            v_max >= (pcount/(vertical_n*5)) && v_min <=  ((pcount/vertical_n) - pcount/(vertical_n*5))) begin
                  end_flag = 1;
         end 
-
+        
+      if(~dark_souls_mode)
+        collision = 0;
+        
       // Reset player position to start if collision or end flag
-        if(posr || l_collision || end_flag ) begin
+        if(posr || time_collision || end_flag || timer == 0 || collision) begin
             timer_reset = 1;
+            
             h_min = h_start;
             v_min = v_start;
              if (end_flag) begin
                 score  = score + 1;
+                if(dark_souls_mode)
+                     score  = score + 1;
              end
+            
          end else begin
-            
-            if(~reset) begin
-            
+                        
                 for (k=0; k<horizontal_n*(vertical_n); k=k+1) begin
                     if(~random_hr[k]) begin
                         
@@ -384,26 +403,38 @@ always @ (posedge refresh_tick) begin
                     end
                 end
                 
-                if (collision_y == 0) begin
-                v_min = v_min + vy;
-                end
+                if ((h_min + vx) <= l_bar || (h_max + vx) >= r_bar) 
+                    collision_x = 1;
                 
-                if (collision_x == 0) begin
-                h_min = h_min + vx;
+                
+                if ((v_min + vy) <= t_bar || (v_max + vy) >= b_bar) 
+                    collision_y = 1;
+                
+
+                if(~dark_souls_mode) begin
+                    if (collision_y == 0) 
+                        v_min = v_min + vy;
+                    
+                    
+                    if (collision_x == 0) 
+                        h_min = h_min + vx;
+                    
+                end else begin
+                    v_min = v_min + vy;
+                    h_min = h_min + vx;
                 end
                 
                 
             
             end
-            
-          end
           
-        if (timer ==horizontal_n*(vertical_n)) 
+        
+          if (timer ==horizontal_n*(vertical_n)) 
             timer_reset = 0;
             
         end_flag = 0;
         collision = 0;
-        
+         time_collision = 0;
         collision_x = 0;
         collision_y = 0;
     end 

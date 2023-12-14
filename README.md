@@ -1,7 +1,7 @@
 ## EC311-Project
 ### By Team Combinational Magic, Aymeric Blaizot, Thomas Young, Tom Barrete, Connor Casey
 # Tilt
-A maze solving game using tilt controls. The user will have to avoid the walls and get to the Maze exit.
+A maze solving game using tilt controls. The user will have to navigate an ever changing maze and reach the flag to increase score in the alloted time.
 
 ## Features
 
@@ -14,5 +14,12 @@ A maze solving game using tilt controls. The user will have to avoid the walls a
 ### Collision Detection (Tom B.)
   We want the user to avoid colliding with the walls or going through them, so will use collision checking
 
-### VGA Display (Aymeric)
-  Using VGA display techniques and memory storage, we are going to display a moveable ball and maze on the screen.
+### Random Maze Generation and Display (Aymeric)
+  The vertical and horiztonal lines of the maze are modulated by two differently clocked linear-feedback shift registers (LFSR) and sampled every second to change the maze every second. The generation of the lines 
+
+### Timer (Aymeric)
+The player has set number seconds that depends on the number lines of the maze.
+
+### Hard Mode (Aymeric)
+A switch on the Nexys board will make collision with any wall reset to the begining of the maze.
+

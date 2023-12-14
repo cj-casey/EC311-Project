@@ -35,7 +35,7 @@ decoder.v,fsm.v
 
 ### Hard Mode (Aymeric)
 A switch on the Nexys board makes collision with any wall reset to the begining of the maze.
-VGA_Main.v
+VGA_Map.v
 ## Overview of the code structure
 
 

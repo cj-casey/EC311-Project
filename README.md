@@ -1,5 +1,5 @@
 ## EC311-Project
-### By Team Combinational Magic, Aymeric Blaizot, Thomas Young, Tom Barrete, Connor Casey
+### By Team Combinational Magic, Aymeric Blaizot, Thomas Young, Tom Barrette, Connor Casey
 # Tilt
 A maze solving game using tilt controls. The user will have to navigate an ever changing maze and reach the flag to increase score in the alloted time.
 Youtube Link: https://youtu.be/FpAGFjh3B7s

@@ -23,3 +23,6 @@ The player has set number of seconds to reach the flag that depends on the numbe
 ### Hard Mode (Aymeric)
 A switch on the Nexys board makes collision with any wall reset to the begining of the maze.
 
+### How to Run
+Add all files in either Final_with_multiple_modes of the Final folder as design sources. Add the Nexys4DDR_Master_lines.xdc as a constraints file. Run synthesis, implemementation, and generate bitstream. Connect Nexys 4 to VGA. 
+

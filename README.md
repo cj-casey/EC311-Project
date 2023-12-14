@@ -20,9 +20,12 @@ The end flag is also programmed as a function of the grid sizes, ensuring that t
 ### Collision Detection (Tom B)
 It is important to prevent the player from simply moving through the walls of the maze, so collision algorithms were necessary in order to determine when and how to limit the player's movement. For the "hard mode" version of the maze, the player reset to the start of the maze whenever they collided with a wall. Therefore, we only needed to check if any kind of collision (intersection between player and another object) had occurred without considering the direction of the collision. This was accomplished using an edge/rectangle detection algorithm for the outer walls of the maze and a for loop combined with a rectangle/rectangle collision detection algorithm for all the inner walls. For the "easy mode" version of the maze, we wanted the wall to stop the player's movement perpendicular to the wall but allow the player to slide parallel to the wall. This required us to split the collision detection into x and y components. We also altered our algorithm to detect whether the player's next position (x+vx, y+vy) would result in a collision, and prevent movement in the correct direction.
 
+VGA_Map.v
 
 ### Random Maze Generation (Aymeric)
   The vertical and horiztonal lines of the maze are modulated by two differently clocked linear-feedback shift registers (LFSR) and sampled every second to change the maze every second. This happens independently for each horizontal and vertical line segment.  
+
+VGA_Map
 
 ### Timer and Score counter (Aymeric)
 The player has set number of seconds to reach the flag that is equal to the number of grids on the maze (shown on the seven segment display). The display also records the number of times the player has reached the end of the maze.

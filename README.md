@@ -31,5 +31,5 @@ A switch on the Nexys board makes collision with any wall reset to the begining 
 
 
 ## How to Run
-Add all files in either Final_with_multiple_modes of the Final folder as design sources. Set the top to as top_lines_mov.v. Add the Nexys4DDR_Master_lines.xdc as a constraints file. Run synthesis, implemementation, generate bitstream, and program the device. Connect Nexys 4 to VGA and enjoy.
+Add all files in either Final_with_multiple_modes or the Final folder as design sources. Set the top to as top_lines_mov.v. Add the Nexys4DDR_Master_lines.xdc as a constraints file. Run synthesis, implemementation, generate bitstream, and program the device. Connect Nexys 4 to VGA and enjoy.
 

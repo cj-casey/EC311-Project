@@ -17,7 +17,7 @@ The end flag is also programmed as a function of the grid sizes, ensuring that t
   We want the user to avoid colliding with the walls or going through them, so will use collision checking
 
 ### Random Maze Generation and Display (Aymeric)
-  The vertical and horiztonal lines of the maze are modulated by two differently clocked linear-feedback shift registers (LFSR) and sampled every second to change the maze every second. The generation of the lines 
+  The vertical and horiztonal lines of the maze are modulated by two differently clocked linear-feedback shift registers (LFSR) and sampled every second to change the maze every second. This happens independently for each horizontal and vertical line segment.  
 
 ### Timer and Score counter (Aymeric)
 The player has set number of seconds to reach the flag that depends on the number lines of the maze. The Seven Segment Display also records the number of times the player has reached the end of the maze.

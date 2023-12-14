@@ -17,8 +17,8 @@ A maze solving game using tilt controls. The user will have to navigate an ever 
 ### Random Maze Generation and Display (Aymeric)
   The vertical and horiztonal lines of the maze are modulated by two differently clocked linear-feedback shift registers (LFSR) and sampled every second to change the maze every second. The generation of the lines 
 
-### Timer (Aymeric)
-The player has set number seconds that depends on the number lines of the maze.
+### Timer and Score counter (Aymeric)
+The player has set number of seconds to reach the flag that depends on the number lines of the maze.
 
 ### Hard Mode (Aymeric)
 A switch on the Nexys board will make collision with any wall reset to the begining of the maze.

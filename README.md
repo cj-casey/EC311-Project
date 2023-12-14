@@ -16,7 +16,7 @@ Youtube Link: https://youtu.be/FpAGFjh3B7s
 The end flag is also programmed as a function of the grid sizes, ensuring that the flag is always centered in the top right grid.
 
 ### Collision Detection (Tom B)
-  We want the user to avoid colliding with the walls or going through them, so will use collision checking
+  Tilt has fully working wall and border collision for the ball. The collision changes based on what mode the game is on. On Normal Mode, the walls stop the user from going through them, but allow the ball to slide on them like you'd expect. On hard mode when the ball collides with a wall it will instantly be sent back to the beginning
 
 ### Random Maze Generation (Aymeric)
   The vertical and horiztonal lines of the maze are modulated by two differently clocked linear-feedback shift registers (LFSR) and sampled every second to change the maze every second. This happens independently for each horizontal and vertical line segment.  

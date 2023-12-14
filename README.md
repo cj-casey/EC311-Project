@@ -21,5 +21,5 @@ A maze solving game using tilt controls. The user will have to navigate an ever 
 The player has set number of seconds to reach the flag that depends on the number lines of the maze.
 
 ### Hard Mode (Aymeric)
-A switch on the Nexys board will make collision with any wall reset to the begining of the maze.
+A switch on the Nexys board makes collision with any wall reset to the begining of the maze.
 
